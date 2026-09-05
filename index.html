@@ -1,0 +1,2011 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aetherium Observatory</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=Orbitron:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    /* =========================
+       AETHERIUM DESIGN TOKENS
+    ========================= */
+    :root {
+      --bg-void: #04040a;
+      --bg-surface: #080812;
+      --bg-elevated: #0d0d1e;
+      --border-subtle: rgba(100, 120, 255, 0.12);
+      --border-active: rgba(100, 120, 255, 0.6);
+      --accent-primary: #6478ff;
+      --accent-secondary: #00e5ff;
+      --accent-danger: #ff4455;
+      --accent-success: #00ff9d;
+      --text-primary: #e8eaf6;
+      --text-secondary: #7986cb;
+      --text-muted: #3d4a8a;
+      --glow-primary: 0 0 20px rgba(100, 120, 255, 0.4);
+      --glow-secondary: 0 0 20px rgba(0, 229, 255, 0.3);
+      --font-display: "Orbitron", sans-serif;
+      --font-body: "IBM Plex Mono", monospace;
+      --nav-height: 74px;
+      --section-pad: clamp(4.75rem, 7vw, 7.25rem);
+      --max-width: 1380px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      background: var(--bg-void);
+      scrollbar-width: thin;
+      scrollbar-color: var(--accent-primary) var(--bg-void);
+    }
+
+    body {
+      margin: 0;
+      min-width: 320px;
+      color: var(--text-primary);
+      background:
+        radial-gradient(circle at 15% 12%, rgba(100, 120, 255, 0.12), transparent 28rem),
+        radial-gradient(circle at 84% 42%, rgba(0, 229, 255, 0.08), transparent 30rem),
+        linear-gradient(180deg, #04040a 0%, #060612 42%, #030309 100%);
+      font-family: var(--font-body);
+      overflow-x: hidden;
+      cursor: crosshair;
+    }
+
+    body.loading {
+      overflow: hidden;
+    }
+
+    ::selection {
+      color: var(--bg-void);
+      background: var(--accent-secondary);
+    }
+
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: var(--bg-void);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--accent-primary);
+      border-radius: 999px;
+    }
+
+    a,
+    button,
+    input,
+    select,
+    textarea,
+    .planet,
+    .orbit-ring,
+    .log-card,
+    label {
+      cursor: crosshair;
+    }
+
+    a,
+    button,
+    .filter-button,
+    .nav-link,
+    .planet,
+    .orbit-ring,
+    input,
+    select,
+    textarea {
+      transition: all 0.15s ease;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    button {
+      border: 0;
+      font: inherit;
+      color: inherit;
+      background: none;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .ripple {
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      pointer-events: none;
+      transform: translate(-50%, -50%) scale(0);
+      background: rgba(255, 255, 255, 0.38);
+      animation: ripple-burst 650ms ease-out forwards;
+    }
+
+    @keyframes ripple-burst {
+      to {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(28);
+      }
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    /* =========================
+       SPLASH + NAVIGATION
+    ========================= */
+    .splash {
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      display: grid;
+      place-items: center;
+      background:
+        linear-gradient(90deg, transparent 0 49.7%, rgba(100, 120, 255, 0.16) 50%, transparent 50.3%),
+        linear-gradient(180deg, #030309 0%, #09091a 100%);
+      transition: transform 850ms cubic-bezier(.75, 0, .16, 1), opacity 850ms ease;
+    }
+
+    .splash.is-complete {
+      transform: translateY(-105%);
+      opacity: 0.4;
+      pointer-events: none;
+    }
+
+    .splash-panel {
+      width: min(720px, calc(100vw - 40px));
+      border: 1px solid var(--border-active);
+      background: rgba(8, 8, 18, 0.82);
+      box-shadow: var(--glow-primary), inset 0 0 60px rgba(100, 120, 255, 0.08);
+      padding: clamp(1.25rem, 4vw, 2.25rem);
+      text-align: center;
+    }
+
+    .splash-label {
+      margin-bottom: 1.5rem;
+      color: var(--text-primary);
+      font-family: var(--font-display);
+      font-size: clamp(0.82rem, 2vw, 1.05rem);
+      line-height: 1.55;
+    }
+
+    .splash-track {
+      height: 2px;
+      background: rgba(100, 120, 255, 0.18);
+      overflow: hidden;
+    }
+
+    .splash-fill {
+      width: 0;
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+      box-shadow: var(--glow-secondary);
+    }
+
+    .splash-percent {
+      margin-top: 1rem;
+      color: var(--accent-secondary);
+      font-family: var(--font-display);
+      font-size: 0.82rem;
+    }
+
+    .site-nav {
+      position: fixed;
+      top: 0;
+      right: 0;
+      left: 0;
+      z-index: 100;
+      height: var(--nav-height);
+      border-bottom: 1px solid transparent;
+      background: rgba(4, 4, 10, 0);
+      transition: all 0.3s ease;
+    }
+
+    .site-nav.is-scrolled {
+      border-bottom-color: var(--border-subtle);
+      background: rgba(4, 4, 10, 0.95);
+      backdrop-filter: blur(18px);
+    }
+
+    .nav-inner {
+      width: min(var(--max-width), calc(100% - 40px));
+      height: 100%;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 2rem;
+    }
+
+    .logo {
+      flex: 0 0 auto;
+      color: var(--text-primary);
+      font-family: var(--font-display);
+      font-size: clamp(0.85rem, 2vw, 1.04rem);
+      font-weight: 700;
+      white-space: nowrap;
+      text-shadow: var(--glow-primary);
+    }
+
+    .nav-toggle {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .hamburger {
+      display: none;
+      width: 44px;
+      height: 44px;
+      place-items: center;
+      border: 1px solid var(--border-subtle);
+      background: rgba(13, 13, 30, 0.7);
+    }
+
+    .hamburger span,
+    .hamburger span::before,
+    .hamburger span::after {
+      display: block;
+      width: 18px;
+      height: 1px;
+      background: var(--text-primary);
+      transition: all 0.15s ease;
+      content: "";
+    }
+
+    .hamburger span::before {
+      transform: translateY(-7px);
+    }
+
+    .hamburger span::after {
+      transform: translateY(6px);
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: clamp(1rem, 2.2vw, 2rem);
+      font-family: var(--font-display);
+      font-size: 0.72rem;
+      font-weight: 600;
+    }
+
+    .nav-link {
+      position: relative;
+      padding: 0.5rem 0;
+      color: var(--text-secondary);
+    }
+
+    .nav-link::after {
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      width: 0;
+      height: 2px;
+      margin: auto;
+      background: var(--accent-primary);
+      box-shadow: var(--glow-primary);
+      transition: width 0.24s ease;
+      content: "";
+    }
+
+    .nav-link:hover,
+    .nav-link.active {
+      color: var(--text-primary);
+    }
+
+    .nav-link.active::after {
+      width: 100%;
+    }
+
+    /* =========================
+       GLOBAL SECTION LANGUAGE
+    ========================= */
+    main {
+      isolation: isolate;
+    }
+
+    .section {
+      position: relative;
+      min-height: 100vh;
+      padding: var(--section-pad) 0;
+      overflow: hidden;
+      border-bottom: 1px solid rgba(100, 120, 255, 0.08);
+    }
+
+    .container {
+      position: relative;
+      z-index: 2;
+      width: min(var(--max-width), calc(100% - 40px));
+      margin: 0 auto;
+    }
+
+    .section-kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.7rem;
+      margin-bottom: 0.9rem;
+      color: var(--accent-secondary);
+      font-family: var(--font-display);
+      font-size: 0.72rem;
+      font-weight: 700;
+    }
+
+    .section-kicker::before {
+      width: 44px;
+      height: 1px;
+      background: var(--accent-secondary);
+      box-shadow: var(--glow-secondary);
+      content: "";
+    }
+
+    .section-heading {
+      position: relative;
+      display: inline-block;
+      margin: 0 0 1.25rem;
+      font-family: var(--font-display);
+      font-size: clamp(2rem, 5vw, 5.4rem);
+      line-height: 0.95;
+      font-weight: 800;
+      overflow: hidden;
+    }
+
+    .section-heading::after {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: -30%;
+      width: 22%;
+      background: linear-gradient(90deg, transparent, rgba(0, 229, 255, 0.78), transparent);
+      transform: skewX(-18deg) translateX(-160%);
+      content: "";
+      opacity: 0;
+    }
+
+    .section-heading.scan-active::after {
+      animation: heading-scan 850ms ease;
+    }
+
+    @keyframes heading-scan {
+      0% {
+        opacity: 0;
+        transform: skewX(-18deg) translateX(-160%);
+      }
+      22%,
+      78% {
+        opacity: 1;
+      }
+      100% {
+        opacity: 0;
+        transform: skewX(-18deg) translateX(730%);
+      }
+    }
+
+    .section-copy {
+      max-width: 720px;
+      margin: 0 0 2.5rem;
+      color: var(--text-secondary);
+      font-size: clamp(0.92rem, 1.4vw, 1.02rem);
+      line-height: 1.8;
+    }
+
+    .grid-noise {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.45;
+      background-image:
+        linear-gradient(rgba(100, 120, 255, 0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(100, 120, 255, 0.05) 1px, transparent 1px);
+      background-size: 64px 64px;
+      mask-image: radial-gradient(circle at center, black, transparent 76%);
+    }
+
+    /* =========================
+       SIGNAL
+    ========================= */
+    .signal {
+      min-height: 100svh;
+      display: grid;
+      place-items: center;
+      padding-top: var(--nav-height);
+      background: radial-gradient(circle at 50% 56%, rgba(100, 120, 255, 0.18), transparent 26rem);
+    }
+
+    #starfield {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+    }
+
+    .hero-frame {
+      position: relative;
+      z-index: 2;
+      width: min(1240px, calc(100% - 32px));
+      min-height: calc(100svh - var(--nav-height));
+      display: grid;
+      place-items: center;
+      text-align: center;
+      padding: clamp(3rem, 8vw, 8rem) 0;
+    }
+
+    .pulse-ring {
+      position: absolute;
+      width: min(72vmin, 720px);
+      aspect-ratio: 1;
+      border: 1px solid rgba(100, 120, 255, 0.22);
+      border-radius: 50%;
+      box-shadow: inset 0 0 60px rgba(100, 120, 255, 0.08), var(--glow-primary);
+      animation: pulse-ring 4s ease-in-out infinite;
+    }
+
+    .pulse-ring::before,
+    .pulse-ring::after {
+      position: absolute;
+      inset: 12%;
+      border: 1px solid rgba(0, 229, 255, 0.11);
+      border-radius: 50%;
+      content: "";
+    }
+
+    .pulse-ring::after {
+      inset: 28%;
+      border-color: rgba(100, 120, 255, 0.18);
+    }
+
+    @keyframes pulse-ring {
+      0%,
+      100% {
+        opacity: 0.55;
+        transform: scale(0.96);
+      }
+      50% {
+        opacity: 1;
+        transform: scale(1.04);
+      }
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 3;
+    }
+
+    .hero-title {
+      width: 100%;
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      column-gap: 0.28em;
+      row-gap: 0.1em;
+      font-family: var(--font-display);
+      font-size: clamp(2.65rem, 8vw, 7.2rem);
+      line-height: 0.92;
+      font-weight: 800;
+      text-transform: uppercase;
+      text-wrap: balance;
+      text-shadow: 0 0 38px rgba(100, 120, 255, 0.4);
+    }
+
+    .hero-title .char {
+      display: inline-block;
+      opacity: 0;
+      transform: translateY(1.1rem) rotateX(72deg);
+      animation: char-rise 720ms cubic-bezier(.2, .72, .18, 1) forwards;
+      animation-delay: calc(var(--i) * 50ms + 1850ms);
+    }
+
+    .hero-title .word {
+      display: inline-flex;
+      white-space: nowrap;
+    }
+
+    @keyframes char-rise {
+      to {
+        opacity: 1;
+        transform: translateY(0) rotateX(0);
+      }
+    }
+
+    .hero-subtitle {
+      max-width: 850px;
+      margin: 2rem auto 0;
+      color: var(--text-secondary);
+      font-size: clamp(0.82rem, 1.5vw, 1.03rem);
+      line-height: 1.85;
+      opacity: 0;
+      transform: translateY(16px);
+      animation: subtitle-reveal 900ms ease forwards;
+      animation-delay: 4300ms;
+    }
+
+    @keyframes subtitle-reveal {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .mission-clock {
+      display: inline-grid;
+      gap: 0.5rem;
+      margin-top: 2.8rem;
+      padding: 1rem 1.2rem;
+      border: 1px solid var(--border-subtle);
+      background: rgba(8, 8, 18, 0.56);
+      backdrop-filter: blur(10px);
+      box-shadow: inset 0 0 24px rgba(100, 120, 255, 0.05);
+    }
+
+    .clock-label {
+      color: var(--text-muted);
+      font-family: var(--font-display);
+      font-size: 0.68rem;
+      font-weight: 700;
+    }
+
+    .clock-value {
+      color: var(--accent-success);
+      font-family: var(--font-display);
+      font-size: clamp(1rem, 2vw, 1.35rem);
+      font-variant-numeric: tabular-nums;
+      text-shadow: 0 0 18px rgba(0, 255, 157, 0.25);
+    }
+
+    .scroll-indicator {
+      position: absolute;
+      bottom: clamp(1.5rem, 4vw, 3rem);
+      left: 50%;
+      z-index: 4;
+      display: grid;
+      justify-items: center;
+      gap: 0.65rem;
+      color: var(--text-secondary);
+      font-family: var(--font-display);
+      font-size: 0.66rem;
+      transform: translateX(-50%);
+      transition: opacity 0.35s ease, transform 0.35s ease;
+    }
+
+    .scroll-indicator.is-hidden {
+      opacity: 0;
+      transform: translateX(-50%) translateY(16px);
+      pointer-events: none;
+    }
+
+    .chevron {
+      width: 18px;
+      height: 18px;
+      border-right: 2px solid var(--accent-secondary);
+      border-bottom: 2px solid var(--accent-secondary);
+      transform: rotate(45deg);
+      animation: chevron-drift 1.4s ease-in-out infinite;
+    }
+
+    @keyframes chevron-drift {
+      50% {
+        transform: rotate(45deg) translate(6px, 6px);
+        opacity: 0.45;
+      }
+    }
+
+    /* =========================
+       ARCHIVE
+    ========================= */
+    .archive {
+      background:
+        linear-gradient(180deg, rgba(8, 8, 18, 0.86), rgba(4, 4, 10, 0.96)),
+        radial-gradient(circle at 20% 40%, rgba(0, 229, 255, 0.07), transparent 32rem);
+    }
+
+    .filter-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.7rem;
+      margin-bottom: 2rem;
+    }
+
+    .filter-button,
+    .station-button,
+    .transmit-button {
+      min-height: 42px;
+      padding: 0.72rem 1rem;
+      border: 1px solid var(--border-subtle);
+      background: rgba(13, 13, 30, 0.72);
+      color: var(--text-secondary);
+      font-family: var(--font-display);
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .filter-button:hover,
+    .filter-button.is-active,
+    .station-button:hover,
+    .transmit-button:hover {
+      border-color: var(--border-active);
+      color: var(--text-primary);
+      box-shadow: var(--glow-primary);
+    }
+
+    .archive-grid {
+      columns: 3 300px;
+      column-gap: 1rem;
+    }
+
+    .log-card {
+      display: inline-block;
+      width: 100%;
+      margin: 0 0 1rem;
+      break-inside: avoid;
+      border: 1px solid var(--border-subtle);
+      background:
+        linear-gradient(135deg, rgba(100, 120, 255, 0.08), transparent 32%),
+        rgba(13, 13, 30, 0.78);
+      padding: 1.15rem;
+      opacity: 0;
+      transform: translateY(28px);
+      transition: opacity 0.45s ease, transform 0.45s ease, border-color 0.15s ease, box-shadow 0.15s ease, filter 0.3s ease;
+    }
+
+    .log-card.is-visible {
+      opacity: 1;
+      transform: translateY(0);
+      transition-delay: calc(var(--stagger) * 80ms);
+    }
+
+    .log-card.is-filtered {
+      opacity: 0.08;
+      transform: scale(0.98);
+      filter: grayscale(1);
+      pointer-events: none;
+    }
+
+    .log-card:hover {
+      border-color: var(--border-active);
+      box-shadow: var(--glow-primary), inset 0 0 40px rgba(100, 120, 255, 0.06);
+      transform: translateY(-8px);
+    }
+
+    .log-topline {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 1.6rem;
+    }
+
+    .log-id {
+      color: var(--text-muted);
+      font-family: var(--font-display);
+      font-size: 0.66rem;
+      font-weight: 700;
+    }
+
+    .badge {
+      border: 1px solid currentColor;
+      padding: 0.26rem 0.44rem;
+      font-family: var(--font-display);
+      font-size: 0.58rem;
+      font-weight: 700;
+    }
+
+    .badge.public {
+      color: var(--accent-success);
+    }
+
+    .badge.classified {
+      color: var(--accent-danger);
+    }
+
+    .badge.restricted {
+      color: var(--accent-secondary);
+    }
+
+    .log-date {
+      display: block;
+      margin-bottom: 0.75rem;
+      color: var(--text-muted);
+      font-size: 0.7rem;
+    }
+
+    .log-title {
+      margin: 0 0 0.85rem;
+      color: var(--text-primary);
+      font-family: var(--font-display);
+      font-size: 1.03rem;
+      line-height: 1.35;
+    }
+
+    .log-excerpt {
+      max-height: 48px;
+      margin: 0;
+      overflow: hidden;
+      color: var(--text-secondary);
+      font-size: 0.82rem;
+      line-height: 1.55;
+      transition: max-height 0.2s ease;
+    }
+
+    .log-card:hover .log-excerpt {
+      max-height: 68px;
+    }
+
+    /* =========================
+       TELEMETRY
+    ========================= */
+    .telemetry {
+      background:
+        linear-gradient(180deg, rgba(4, 4, 10, 0.96), rgba(8, 8, 18, 0.94)),
+        radial-gradient(circle at 76% 30%, rgba(100, 120, 255, 0.13), transparent 34rem);
+    }
+
+    .glitch {
+      animation: glitch-flicker 1.6s steps(1, end) infinite;
+    }
+
+    @keyframes glitch-flicker {
+      0%,
+      100% {
+        text-shadow: 0 0 0 transparent;
+      }
+      10% {
+        text-shadow: 2px 0 var(--accent-secondary), -2px 0 var(--accent-danger);
+      }
+      20% {
+        text-shadow: -2px 1px var(--accent-secondary), 2px -1px var(--accent-danger);
+      }
+      30%,
+      86% {
+        text-shadow: 0 0 20px rgba(100, 120, 255, 0.36);
+      }
+      90% {
+        text-shadow: 3px 0 var(--accent-danger), -3px 0 var(--accent-secondary);
+      }
+    }
+
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 1rem;
+    }
+
+    .metric-panel {
+      position: relative;
+      min-height: 220px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      border: 1px solid var(--border-subtle);
+      background: rgba(13, 13, 30, 0.72);
+      padding: 1.1rem;
+      overflow: hidden;
+      box-shadow: inset 0 0 44px rgba(100, 120, 255, 0.04);
+    }
+
+    .metric-panel::before {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.035) 0 1px, transparent 1px 4px);
+      mix-blend-mode: screen;
+      opacity: 0.34;
+      content: "";
+    }
+
+    .metric-label {
+      position: relative;
+      color: var(--text-secondary);
+      font-family: var(--font-display);
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .metric-value {
+      position: relative;
+      margin-top: 2.2rem;
+      color: var(--text-primary);
+      font-family: var(--font-display);
+      font-size: clamp(1.8rem, 3.4vw, 3rem);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .metric-unit {
+      color: var(--text-muted);
+      font-size: 0.8rem;
+    }
+
+    .progress-shell {
+      position: relative;
+      height: 6px;
+      margin-top: 1.4rem;
+      overflow: hidden;
+      background: rgba(100, 120, 255, 0.13);
+    }
+
+    .progress-fill {
+      width: 0%;
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+      box-shadow: var(--glow-secondary);
+      transition: width 0.6s ease;
+    }
+
+    .sync-panel.is-drift {
+      border-color: rgba(255, 68, 85, 0.48);
+      box-shadow: 0 0 24px rgba(255, 68, 85, 0.13), inset 0 0 44px rgba(255, 68, 85, 0.04);
+    }
+
+    .sync-panel.is-drift .metric-value {
+      color: var(--accent-danger);
+    }
+
+    .sync-panel.is-nominal .metric-value {
+      color: var(--accent-success);
+    }
+
+    .terminal {
+      margin-top: 1rem;
+      border: 1px solid rgba(0, 255, 157, 0.2);
+      background: #010402;
+      box-shadow: inset 0 0 35px rgba(0, 255, 157, 0.05);
+      overflow: hidden;
+    }
+
+    .terminal-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 36px;
+      border-bottom: 1px solid rgba(0, 255, 157, 0.14);
+      padding: 0 0.9rem;
+      color: rgba(0, 255, 157, 0.7);
+      font-family: var(--font-display);
+      font-size: 0.63rem;
+    }
+
+    .terminal-log {
+      height: 240px;
+      margin: 0;
+      padding: 1rem;
+      overflow: hidden auto;
+      color: var(--accent-success);
+      font-size: 0.78rem;
+      line-height: 1.7;
+      text-shadow: 0 0 10px rgba(0, 255, 157, 0.22);
+      scrollbar-color: var(--accent-success) #010402;
+    }
+
+    .terminal-log div::before {
+      color: rgba(0, 255, 157, 0.48);
+      content: "> ";
+    }
+
+    /* =========================
+       CARTOGRAPHY
+    ========================= */
+    .cartography {
+      background:
+        radial-gradient(circle at 45% 50%, rgba(100, 120, 255, 0.14), transparent 30rem),
+        linear-gradient(180deg, #050510, #030309);
+    }
+
+    .map-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
+      gap: 1rem;
+      align-items: stretch;
+    }
+
+    .map-stage {
+      position: relative;
+      min-height: min(72vw, 700px);
+      border: 1px solid var(--border-subtle);
+      background:
+        radial-gradient(circle at center, rgba(255, 255, 255, 0.06), transparent 4%),
+        rgba(8, 8, 18, 0.55);
+      overflow: hidden;
+    }
+
+    .solar-svg {
+      width: 100%;
+      height: 100%;
+      min-height: 620px;
+      display: block;
+    }
+
+    .orbit-ring {
+      fill: none;
+      stroke: rgba(100, 120, 255, 0.18);
+      stroke-width: 1;
+      transition: stroke 0.15s ease, filter 0.15s ease;
+    }
+
+    .orbit-ring:hover,
+    .orbit-wrap:hover .orbit-ring {
+      stroke: rgba(0, 229, 255, 0.72);
+      filter: drop-shadow(0 0 8px rgba(0, 229, 255, 0.5));
+    }
+
+    .orbit-path {
+      transform-origin: 500px 500px;
+      animation: orbit-spin var(--speed) linear infinite;
+    }
+
+    @keyframes orbit-spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .sun {
+      fill: url(#sunGradient);
+      filter: drop-shadow(0 0 28px rgba(255, 192, 96, 0.72));
+    }
+
+    .planet {
+      stroke: rgba(255, 255, 255, 0.38);
+      stroke-width: 1;
+    }
+
+    .station-marker {
+      fill: var(--accent-secondary);
+      filter: drop-shadow(0 0 12px rgba(0, 229, 255, 0.9));
+      animation: station-blink 1.1s ease-in-out infinite;
+    }
+
+    @keyframes station-blink {
+      50% {
+        opacity: 0.24;
+        transform: scale(1.45);
+      }
+    }
+
+    .signal-beam {
+      stroke: var(--accent-secondary);
+      stroke-width: 2;
+      stroke-dasharray: 12 12;
+      stroke-dashoffset: 360;
+      opacity: 0;
+      filter: drop-shadow(0 0 12px rgba(0, 229, 255, 0.8));
+    }
+
+    .signal-beam.is-active {
+      animation: beam-fire 1.4s ease forwards;
+    }
+
+    @keyframes beam-fire {
+      0% {
+        opacity: 0;
+        stroke-dashoffset: 360;
+      }
+      20%,
+      80% {
+        opacity: 0.9;
+      }
+      100% {
+        opacity: 0;
+        stroke-dashoffset: 0;
+      }
+    }
+
+    .map-panel {
+      border: 1px solid var(--border-subtle);
+      background: rgba(13, 13, 30, 0.72);
+      padding: 1.2rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 100%;
+    }
+
+    .planet-name {
+      margin: 0 0 1rem;
+      font-family: var(--font-display);
+      font-size: 1.5rem;
+    }
+
+    .planet-data {
+      display: grid;
+      gap: 1rem;
+      margin-bottom: 1.3rem;
+    }
+
+    .planet-data span {
+      display: block;
+      margin-bottom: 0.28rem;
+      color: var(--text-muted);
+      font-family: var(--font-display);
+      font-size: 0.62rem;
+      font-weight: 700;
+    }
+
+    .planet-data strong {
+      color: var(--accent-secondary);
+      font-family: var(--font-display);
+      font-size: 0.9rem;
+      font-weight: 700;
+    }
+
+    .observation-note {
+      color: var(--text-secondary);
+      font-size: 0.84rem;
+      line-height: 1.7;
+    }
+
+    .station-button {
+      width: 100%;
+      margin-top: 1.5rem;
+    }
+
+    /* =========================
+       TRANSMISSION
+    ========================= */
+    .transmission {
+      background:
+        radial-gradient(circle at center, rgba(0, 229, 255, 0.08), transparent 30rem),
+        var(--bg-void);
+    }
+
+    .dot-grid {
+      position: absolute;
+      inset: 0;
+      background-image: radial-gradient(rgba(100, 120, 255, 0.28) 1px, transparent 1px);
+      background-size: 24px 24px;
+      animation: dot-drift 14s linear infinite;
+      opacity: 0.28;
+      mask-image: linear-gradient(to bottom, transparent, black 16%, black 82%, transparent);
+    }
+
+    @keyframes dot-drift {
+      to {
+        background-position: 72px 72px;
+      }
+    }
+
+    .transmission-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 0.9fr) minmax(320px, 1.1fr);
+      gap: clamp(1rem, 4vw, 5rem);
+      align-items: start;
+    }
+
+    .transmission-form {
+      border: 1px solid var(--border-subtle);
+      background: rgba(8, 8, 18, 0.78);
+      padding: clamp(1rem, 3vw, 1.6rem);
+      box-shadow: inset 0 0 50px rgba(100, 120, 255, 0.05);
+    }
+
+    .field {
+      position: relative;
+      margin-bottom: 1.2rem;
+    }
+
+    .field input,
+    .field select,
+    .field textarea {
+      width: 100%;
+      border: 1px solid var(--border-subtle);
+      border-radius: 0;
+      outline: 0;
+      background: rgba(13, 13, 30, 0.74);
+      color: var(--text-primary);
+      font-family: var(--font-body);
+      font-size: 0.92rem;
+      padding: 1.35rem 0.9rem 0.72rem;
+      appearance: none;
+    }
+
+    .field textarea {
+      min-height: 190px;
+      resize: vertical;
+      line-height: 1.7;
+    }
+
+    .field label {
+      position: absolute;
+      top: 1rem;
+      left: 0.9rem;
+      color: var(--text-muted);
+      font-family: var(--font-display);
+      font-size: 0.66rem;
+      font-weight: 700;
+      pointer-events: none;
+      transform-origin: left top;
+      transition: transform 0.18s ease, color 0.18s ease;
+    }
+
+    .field input:focus,
+    .field select:focus,
+    .field textarea:focus,
+    .field input:not(:placeholder-shown),
+    .field textarea:not(:placeholder-shown),
+    .field select:valid {
+      border-color: var(--border-active);
+      box-shadow: var(--glow-primary);
+    }
+
+    .field input:focus + label,
+    .field select:focus + label,
+    .field textarea:focus + label,
+    .field input:not(:placeholder-shown) + label,
+    .field textarea:not(:placeholder-shown) + label,
+    .field select:valid + label {
+      color: var(--accent-secondary);
+      transform: translateY(-0.62rem) scale(0.76);
+    }
+
+    .select-field::after {
+      position: absolute;
+      right: 1rem;
+      top: 1.1rem;
+      width: 9px;
+      height: 9px;
+      border-right: 1px solid var(--accent-secondary);
+      border-bottom: 1px solid var(--accent-secondary);
+      transform: rotate(45deg);
+      pointer-events: none;
+      content: "";
+    }
+
+    .counter-row {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: -0.6rem;
+      margin-bottom: 1rem;
+      color: var(--text-muted);
+      font-family: var(--font-display);
+      font-size: 0.64rem;
+    }
+
+    .transmit-button {
+      width: 100%;
+      min-height: 54px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.7rem;
+      color: var(--text-primary);
+    }
+
+    .loader-ring {
+      width: 17px;
+      height: 17px;
+      display: none;
+      border: 2px solid rgba(255, 255, 255, 0.22);
+      border-top-color: var(--accent-secondary);
+      border-radius: 50%;
+      animation: spin 800ms linear infinite;
+    }
+
+    .transmit-button.is-sending .loader-ring {
+      display: inline-block;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .checkmark {
+      width: 20px;
+      height: 20px;
+      display: none;
+    }
+
+    .checkmark path {
+      fill: none;
+      stroke: var(--accent-success);
+      stroke-width: 3;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-dasharray: 30;
+      stroke-dashoffset: 30;
+    }
+
+    .transmit-button.is-success .checkmark {
+      display: inline-block;
+    }
+
+    .transmit-button.is-success .checkmark path {
+      animation: draw-check 500ms ease forwards;
+    }
+
+    @keyframes draw-check {
+      to {
+        stroke-dashoffset: 0;
+      }
+    }
+
+    .contact-manifesto {
+      min-height: 420px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      border-left: 1px solid var(--border-subtle);
+      padding-left: clamp(1rem, 3vw, 2rem);
+    }
+
+    .manifesto-line {
+      margin: 0;
+      color: var(--text-secondary);
+      font-family: var(--font-display);
+      font-size: clamp(1.2rem, 3vw, 2.8rem);
+      line-height: 1.2;
+    }
+
+    .coordinate-block {
+      display: grid;
+      gap: 0.7rem;
+      color: var(--text-muted);
+      font-size: 0.78rem;
+    }
+
+    .morse-ticker {
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      overflow: hidden;
+      border-top: 1px solid var(--border-subtle);
+      background: rgba(4, 4, 10, 0.86);
+      padding: 0.82rem 0;
+      color: var(--accent-secondary);
+      font-family: var(--font-display);
+      font-size: 0.68rem;
+      white-space: nowrap;
+    }
+
+    .morse-track {
+      display: inline-block;
+      min-width: max-content;
+      animation: morse-marquee 28s linear infinite;
+    }
+
+    @keyframes morse-marquee {
+      from {
+        transform: translateX(100vw);
+      }
+      to {
+        transform: translateX(-100%);
+      }
+    }
+
+    /* =========================
+       RESPONSIVE + REDUCED MOTION
+    ========================= */
+    @media (max-width: 1040px) {
+      .metric-grid,
+      .map-layout,
+      .transmission-layout {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .metric-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .map-layout,
+      .transmission-layout {
+        grid-template-columns: 1fr;
+      }
+
+      .map-panel {
+        min-height: auto;
+      }
+    }
+
+    @media (max-width: 760px) {
+      :root {
+        --nav-height: 66px;
+      }
+
+      .hamburger {
+        display: grid;
+      }
+
+      .nav-links {
+        position: fixed;
+        top: var(--nav-height);
+        right: 0;
+        left: 0;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0;
+        border-bottom: 1px solid var(--border-subtle);
+        background: rgba(4, 4, 10, 0.98);
+        backdrop-filter: blur(18px);
+        transform: translateY(-115%);
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .nav-link {
+        padding: 1rem 20px;
+        border-top: 1px solid var(--border-subtle);
+      }
+
+      .nav-toggle:checked ~ .hamburger span {
+        background: transparent;
+      }
+
+      .nav-toggle:checked ~ .hamburger span::before {
+        transform: translateY(1px) rotate(45deg);
+      }
+
+      .nav-toggle:checked ~ .hamburger span::after {
+        transform: translateY(0) rotate(-45deg);
+      }
+
+      .nav-toggle:checked ~ .nav-links {
+        transform: translateY(0);
+        opacity: 1;
+        pointer-events: auto;
+      }
+
+      .metric-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .solar-svg {
+        min-height: 420px;
+      }
+
+      .map-stage {
+        min-height: 440px;
+      }
+
+      .archive-grid {
+        columns: 1;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: 0.001ms !important;
+      }
+
+      .orbit-path {
+        animation: none !important;
+      }
+    }
+  </style>
+</head>
+<body class="loading">
+  <div class="splash" aria-hidden="true">
+    <div class="splash-panel">
+      <div class="splash-label">◈ INITIALIZING AETHERIUM SYSTEMS...</div>
+      <div class="splash-track"><div class="splash-fill"></div></div>
+      <div class="splash-percent">0%</div>
+    </div>
+  </div>
+
+  <nav class="site-nav" aria-label="Primary navigation">
+    <div class="nav-inner">
+      <a href="#signal" class="logo">◈ AETHERIUM</a>
+      <input type="checkbox" id="nav-toggle" class="nav-toggle" aria-label="Toggle navigation">
+      <label for="nav-toggle" class="hamburger" aria-hidden="true"><span></span></label>
+      <div class="nav-links">
+        <a class="nav-link active" href="#signal">SIGNAL</a>
+        <a class="nav-link" href="#archive">ARCHIVE</a>
+        <a class="nav-link" href="#telemetry">TELEMETRY</a>
+        <a class="nav-link" href="#cartography">CARTOGRAPHY</a>
+        <a class="nav-link" href="#transmission">TRANSMISSION</a>
+      </div>
+    </div>
+  </nav>
+
+  <main>
+    <section id="signal" class="section signal" data-section="SIGNAL">
+      <canvas id="starfield" aria-hidden="true"></canvas>
+      <div class="grid-noise"></div>
+      <div class="hero-frame">
+        <div class="pulse-ring" aria-hidden="true"></div>
+        <div class="hero-content">
+          <h1 class="hero-title" data-title="Aetherium Observatory">Aetherium Observatory</h1>
+          <p class="hero-subtitle">A deep-space research station at the outer edge of solar memory, operating in 2187 as a public archive, instrument panel, and artistic declaration.</p>
+          <div class="mission-clock" aria-live="polite">
+            <span class="clock-label">MISSION CLOCK / LAUNCH: 2187-03-03 09:00:00 UTC</span>
+            <span class="clock-value" id="mission-clock">000D 00H 00M 00S</span>
+          </div>
+        </div>
+        <a href="#archive" class="scroll-indicator">
+          <span class="chevron" aria-hidden="true"></span>
+          <span>SCROLL TO EXPLORE</span>
+        </a>
+      </div>
+    </section>
+
+    <section id="archive" class="section archive" data-section="ARCHIVE">
+      <div class="grid-noise"></div>
+      <div class="container">
+        <span class="section-kicker">DATA LOGS</span>
+        <h2 class="section-heading">Archive</h2>
+        <p class="section-copy">Curated research dispatches from the edge of heliopause: anomalies, instrument poetry, and fragments cleared for delayed public release.</p>
+        <div class="filter-bar" aria-label="Filter archive cards">
+          <button class="filter-button is-active" data-filter="ALL">ALL</button>
+          <button class="filter-button" data-filter="CLASSIFIED">CLASSIFIED</button>
+          <button class="filter-button" data-filter="PUBLIC">PUBLIC</button>
+          <button class="filter-button" data-filter="RESTRICTED">RESTRICTED</button>
+        </div>
+        <div class="archive-grid">
+          <article class="log-card" data-classification="PUBLIC">
+            <div class="log-topline"><span class="log-id">AO-2187-001</span><span class="badge public">PUBLIC</span></div>
+            <time class="log-date">2187.03.05</time>
+            <h3 class="log-title">First Light Beyond Neptune</h3>
+            <p class="log-excerpt">The exterior array confirmed a stable optical lock on the Kuiper filament, returning a blue-shift shimmer across all four coronagraph plates.</p>
+          </article>
+          <article class="log-card" data-classification="RESTRICTED">
+            <div class="log-topline"><span class="log-id">AO-2187-014</span><span class="badge restricted">RESTRICTED</span></div>
+            <time class="log-date">2187.03.18</time>
+            <h3 class="log-title">Ion Wake Reconstruction</h3>
+            <p class="log-excerpt">A backward model of the station wake suggests particulate memory in the surrounding field, repeating crew motion with a nine-minute lag.</p>
+          </article>
+          <article class="log-card" data-classification="CLASSIFIED">
+            <div class="log-topline"><span class="log-id">AO-2187-029</span><span class="badge classified">CLASSIFIED</span></div>
+            <time class="log-date">2187.04.02</time>
+            <h3 class="log-title">The Obsidian Reply</h3>
+            <p class="log-excerpt">A narrow-band response arrived from an empty coordinate. The waveform resembles old Earth speech only after removing stellar wind.</p>
+          </article>
+          <article class="log-card" data-classification="PUBLIC">
+            <div class="log-topline"><span class="log-id">AO-2187-047</span><span class="badge public">PUBLIC</span></div>
+            <time class="log-date">2187.04.21</time>
+            <h3 class="log-title">Thermal Garden Calibration</h3>
+            <p class="log-excerpt">Hydroponic mirrors were retuned to reflect Saturnian albedo simulations, improving basil yield while reducing spectral noise by 2.8 percent.</p>
+          </article>
+          <article class="log-card" data-classification="RESTRICTED">
+            <div class="log-topline"><span class="log-id">AO-2187-073</span><span class="badge restricted">RESTRICTED</span></div>
+            <time class="log-date">2187.05.09</time>
+            <h3 class="log-title">Gravitic Lensing Error</h3>
+            <p class="log-excerpt">The lensing array paints two additional moons around Neptune. Cross-checks indicate neither sensor failure nor known orbital debris.</p>
+          </article>
+          <article class="log-card" data-classification="CLASSIFIED">
+            <div class="log-topline"><span class="log-id">AO-2187-088</span><span class="badge classified">CLASSIFIED</span></div>
+            <time class="log-date">2187.05.30</time>
+            <h3 class="log-title">Dream Residue in Cryo Bay Three</h3>
+            <p class="log-excerpt">Four sleepers reported identical visual fields: a white corridor, black ocean, and a door labeled with tomorrow's telemetry checksum.</p>
+          </article>
+          <article class="log-card" data-classification="PUBLIC">
+            <div class="log-topline"><span class="log-id">AO-2187-112</span><span class="badge public">PUBLIC</span></div>
+            <time class="log-date">2187.06.17</time>
+            <h3 class="log-title">Heliopause Choir</h3>
+            <p class="log-excerpt">Plasma oscillation recordings were sonified for the public archive. The resulting chord spans thirty-one hours and never resolves.</p>
+          </article>
+          <article class="log-card" data-classification="RESTRICTED">
+            <div class="log-topline"><span class="log-id">AO-2187-139</span><span class="badge restricted">RESTRICTED</span></div>
+            <time class="log-date">2187.07.08</time>
+            <h3 class="log-title">Mirror Field Ethics Review</h3>
+            <p class="log-excerpt">The board delayed publication of recursive observation data until the station can prove it is not influencing the object it records.</p>
+          </article>
+          <article class="log-card" data-classification="CLASSIFIED">
+            <div class="log-topline"><span class="log-id">AO-2187-174</span><span class="badge classified">CLASSIFIED</span></div>
+            <time class="log-date">2187.08.01</time>
+            <h3 class="log-title">Unscheduled Passenger Mass</h3>
+            <p class="log-excerpt">Docking clamps registered a 72kg mass aboard no listed vessel. Internal cameras show an empty lock and frost moving inward.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="telemetry" class="section telemetry" data-section="TELEMETRY">
+      <div class="grid-noise"></div>
+      <div class="container">
+        <span class="section-kicker">LIVE DASHBOARD</span>
+        <h2 class="section-heading glitch">Telemetry</h2>
+        <p class="section-copy">Simulated station telemetry from the Aetherium public channel, filtered through a seven-minute delay and a very suspicious editorial silence.</p>
+        <div class="metric-grid">
+          <div class="metric-panel">
+            <div>
+              <div class="metric-label">Signal Strength</div>
+              <div class="metric-value"><span id="signal-strength">82</span><span class="metric-unit">%</span></div>
+            </div>
+            <div class="progress-shell"><div class="progress-fill" id="signal-progress"></div></div>
+          </div>
+          <div class="metric-panel">
+            <div class="metric-label">Thermal Core Temperature</div>
+            <div class="metric-value"><span id="thermal-core">3142</span><span class="metric-unit"> K</span></div>
+          </div>
+          <div class="metric-panel">
+            <div class="metric-label">Dark Matter Density</div>
+            <div class="metric-value"><span id="matter-density">0.084</span><span class="metric-unit"> yg/m3</span></div>
+          </div>
+          <div class="metric-panel sync-panel is-nominal" id="sync-panel">
+            <div class="metric-label">Quantum Sync Status</div>
+            <div class="metric-value" id="sync-status">NOMINAL</div>
+          </div>
+        </div>
+        <div class="terminal">
+          <div class="terminal-bar"><span>AO TERMINAL / PUBLIC MIRROR</span><span>GREEN CHANNEL</span></div>
+          <pre class="terminal-log" id="terminal-log" aria-live="polite"></pre>
+        </div>
+      </div>
+    </section>
+
+    <section id="cartography" class="section cartography" data-section="CARTOGRAPHY">
+      <div class="grid-noise"></div>
+      <div class="container">
+        <span class="section-kicker">SOLAR MAP</span>
+        <h2 class="section-heading">Cartography</h2>
+        <p class="section-copy">A public-facing orbital diagram: not a navigation chart, not a toy, and only technically a confession that the station is much farther out than reported.</p>
+        <div class="map-layout">
+          <div class="map-stage">
+            <svg class="solar-svg" viewBox="0 0 1000 1000" role="img" aria-label="Interactive solar system map">
+              <defs>
+                <radialGradient id="sunGradient">
+                  <stop offset="0%" stop-color="#fff3bb"/>
+                  <stop offset="45%" stop-color="#ffad45"/>
+                  <stop offset="100%" stop-color="#ff4455"/>
+                </radialGradient>
+                <radialGradient id="planetBlue">
+                  <stop offset="0%" stop-color="#dfe7ff"/>
+                  <stop offset="100%" stop-color="#6478ff"/>
+                </radialGradient>
+                <radialGradient id="planetCyan">
+                  <stop offset="0%" stop-color="#ecffff"/>
+                  <stop offset="100%" stop-color="#00e5ff"/>
+                </radialGradient>
+                <radialGradient id="planetRose">
+                  <stop offset="0%" stop-color="#ffe0e5"/>
+                  <stop offset="100%" stop-color="#ff4455"/>
+                </radialGradient>
+              </defs>
+              <line id="signal-beam" class="signal-beam" x1="500" y1="500" x2="880" y2="245"></line>
+              <circle class="sun" cx="500" cy="500" r="34"></circle>
+              <g class="orbit-wrap">
+                <circle class="orbit-ring" cx="500" cy="500" r="92"></circle>
+                <g class="orbit-path" style="--speed: 8s"><circle class="planet" data-planet="Mercury" cx="592" cy="500" r="8" fill="url(#planetRose)"></circle></g>
+              </g>
+              <g class="orbit-wrap">
+                <circle class="orbit-ring" cx="500" cy="500" r="142"></circle>
+                <g class="orbit-path" style="--speed: 13s"><circle class="planet" data-planet="Venus" cx="642" cy="500" r="12" fill="#c8a765"></circle></g>
+              </g>
+              <g class="orbit-wrap">
+                <circle class="orbit-ring" cx="500" cy="500" r="198"></circle>
+                <g class="orbit-path" style="--speed: 19s"><circle class="planet" data-planet="Earth" cx="698" cy="500" r="13" fill="url(#planetBlue)"></circle></g>
+              </g>
+              <g class="orbit-wrap">
+                <circle class="orbit-ring" cx="500" cy="500" r="258"></circle>
+                <g class="orbit-path" style="--speed: 29s"><circle class="planet" data-planet="Mars" cx="758" cy="500" r="10" fill="#d0644e"></circle></g>
+              </g>
+              <g class="orbit-wrap">
+                <circle class="orbit-ring" cx="500" cy="500" r="336"></circle>
+                <g class="orbit-path" style="--speed: 44s"><circle class="planet" data-planet="Jupiter" cx="836" cy="500" r="22" fill="#d6b28a"></circle></g>
+              </g>
+              <g class="orbit-wrap">
+                <circle class="orbit-ring" cx="500" cy="500" r="418"></circle>
+                <g class="orbit-path" style="--speed: 64s"><circle class="planet" data-planet="Neptune" cx="918" cy="500" r="17" fill="url(#planetCyan)"></circle></g>
+              </g>
+              <circle class="orbit-ring" cx="500" cy="500" r="460" stroke-dasharray="3 9"></circle>
+              <g class="station" transform="translate(880 245)">
+                <circle class="station-marker" r="9"></circle>
+                <circle class="orbit-ring" r="22" stroke-dasharray="4 6"></circle>
+                <text x="20" y="-18" fill="#00e5ff" font-family="Orbitron" font-size="18">AO</text>
+              </g>
+            </svg>
+          </div>
+          <aside class="map-panel" aria-live="polite">
+            <div>
+              <h3 class="planet-name" id="planet-name">Aetherium Station</h3>
+              <div class="planet-data">
+                <div><span>DISTANCE FROM SUN</span><strong id="planet-distance">4.92 billion km</strong></div>
+                <div><span>ORBITAL PERIOD</span><strong id="planet-period">Unpublished</strong></div>
+              </div>
+              <p class="observation-note" id="planet-note">Blinking beyond Neptune, the station maintains a ceremonial orbit around a point nobody in administration wants to name.</p>
+            </div>
+            <button class="station-button" id="locate-station">LOCATE STATION</button>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <section id="transmission" class="section transmission" data-section="TRANSMISSION">
+      <div class="dot-grid"></div>
+      <div class="container">
+        <span class="section-kicker">CONTACT RELAY</span>
+        <h2 class="section-heading">Transmission</h2>
+        <div class="transmission-layout">
+          <div class="contact-manifesto">
+            <p class="manifesto-line">All messages are delayed. Some arrive before they are sent.</p>
+            <div class="coordinate-block">
+              <span>STATION COORDINATES / RA 22H 18M 07S</span>
+              <span>DECLINATION -13° 44′ 09″</span>
+              <span>PUBLIC WINDOW / 04:00-04:17 UTC</span>
+            </div>
+          </div>
+          <form class="transmission-form" id="transmission-form">
+            <div class="field">
+              <input id="operator-id" name="operator-id" type="text" placeholder=" " autocomplete="off" required>
+              <label for="operator-id">OPERATOR ID</label>
+            </div>
+            <div class="field select-field">
+              <select id="frequency-band" name="frequency-band" required>
+                <option value="" selected disabled></option>
+                <option>LOW HELIOSPHERIC BAND</option>
+                <option>KUIPER MIRROR CHANNEL</option>
+                <option>QUANTUM SYNC RESERVE</option>
+              </select>
+              <label for="frequency-band">FREQUENCY BAND</label>
+            </div>
+            <div class="field">
+              <textarea id="message" name="message" maxlength="420" placeholder=" " required></textarea>
+              <label for="message">MESSAGE</label>
+            </div>
+            <div class="counter-row"><span id="char-count">0</span>/420</div>
+            <button class="transmit-button" type="submit">
+              <span class="loader-ring" aria-hidden="true"></span>
+              <span class="button-text">TRANSMIT MESSAGE</span>
+              <svg class="checkmark" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12.5l5.2 5.2L20 6.5"/></svg>
+            </button>
+          </form>
+        </div>
+      </div>
+      <div class="morse-ticker" aria-hidden="true">
+        <div class="morse-track">RA 22H 18M 07S / DEC -13 44 09 / .-. .- / ..--- ..--- .... / .---- ---.. -- / ----- --... ... / -.. . -.-. / -....- .---- ...-- / ....- ....- / ----- ----. / AETHERIUM PUBLIC RELAY / </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      const $ = (selector, context = document) => context.querySelector(selector);
+      const $$ = (selector, context = document) => Array.from(context.querySelectorAll(selector));
+
+      /* =========================
+         SPLASH + TITLE SEQUENCE
+      ========================= */
+      const splash = $(".splash");
+      const splashFill = $(".splash-fill");
+      const splashPercent = $(".splash-percent");
+      const splashStart = performance.now();
+      const splashDuration = prefersReducedMotion ? 80 : 1800;
+
+      function animateSplash(now) {
+        const progress = Math.min((now - splashStart) / splashDuration, 1);
+        const eased = 1 - Math.pow(1 - progress, 3);
+        splashFill.style.width = `${eased * 100}%`;
+        splashPercent.textContent = `${Math.round(eased * 100)}%`;
+        if (progress < 1) {
+          requestAnimationFrame(animateSplash);
+        } else {
+          splash.classList.add("is-complete");
+          document.body.classList.remove("loading");
+        }
+      }
+      requestAnimationFrame(animateSplash);
+
+      const title = $(".hero-title");
+      const titleText = title.dataset.title || title.textContent;
+      title.textContent = "";
+      let charIndex = 0;
+      titleText.split(" ").forEach((word) => {
+        const wordSpan = document.createElement("span");
+        wordSpan.className = "word";
+        [...word].forEach((char) => {
+          const span = document.createElement("span");
+          span.className = "char";
+          span.style.setProperty("--i", charIndex);
+          span.textContent = char;
+          wordSpan.appendChild(span);
+          charIndex += 1;
+        });
+        title.appendChild(wordSpan);
+      });
+
+      /* =========================
+         NAVIGATION + OBSERVERS
+      ========================= */
+      const nav = $(".site-nav");
+      const navToggle = $("#nav-toggle");
+      const navLinks = $$(".nav-link");
+      const sections = $$(".section");
+      const scrollIndicator = $(".scroll-indicator");
+
+      function updateNavChrome() {
+        nav.classList.toggle("is-scrolled", window.scrollY > 50);
+        scrollIndicator.classList.toggle("is-hidden", window.scrollY > 8);
+      }
+      window.addEventListener("scroll", updateNavChrome, { passive: true });
+      updateNavChrome();
+
+      navLinks.forEach((link) => {
+        link.addEventListener("click", () => {
+          navToggle.checked = false;
+        });
+      });
+
+      const sectionObserver = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          const id = entry.target.id;
+          navLinks.forEach((link) => {
+            link.classList.toggle("active", link.getAttribute("href") === `#${id}`);
+          });
+          const heading = $(".section-heading", entry.target);
+          if (heading && !heading.dataset.scanned) {
+            heading.dataset.scanned = "true";
+            heading.classList.add("scan-active");
+          }
+        });
+      }, { threshold: 0.45 });
+
+      sections.forEach((section) => sectionObserver.observe(section));
+
+      const cardObserver = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) entry.target.classList.add("is-visible");
+        });
+      }, { threshold: 0.2 });
+
+      $$(".log-card").forEach((card, index) => {
+        card.style.setProperty("--stagger", index);
+        cardObserver.observe(card);
+      });
+
+      /* =========================
+         RIPPLE INTERACTIONS
+      ========================= */
+      $$("button, .nav-link, .logo, .scroll-indicator").forEach((element) => {
+        element.addEventListener("click", (event) => {
+          const rect = element.getBoundingClientRect();
+          const ripple = document.createElement("span");
+          ripple.className = "ripple";
+          ripple.style.left = `${event.clientX - rect.left}px`;
+          ripple.style.top = `${event.clientY - rect.top}px`;
+          element.appendChild(ripple);
+          ripple.addEventListener("animationend", () => ripple.remove(), { once: true });
+        });
+      });
+
+      /* =========================
+         CANVAS STAR FIELD
+      ========================= */
+      const canvas = $("#starfield");
+      const ctx = canvas.getContext("2d");
+      let stars = [];
+      const pointer = { x: 0, y: 0, targetX: 0, targetY: 0 };
+
+      function resizeStars() {
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        canvas.width = Math.floor(canvas.offsetWidth * dpr);
+        canvas.height = Math.floor(canvas.offsetHeight * dpr);
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        const count = Math.floor((canvas.offsetWidth * canvas.offsetHeight) / 5200);
+        stars = Array.from({ length: count }, () => ({
+          x: Math.random() * canvas.offsetWidth,
+          y: Math.random() * canvas.offsetHeight,
+          z: Math.random() * 1 + 0.2,
+          r: Math.random() * 1.35 + 0.2,
+          a: Math.random() * 0.75 + 0.25,
+          tw: Math.random() * Math.PI * 2
+        }));
+      }
+
+      function drawStars(time) {
+        ctx.clearRect(0, 0, canvas.offsetWidth, canvas.offsetHeight);
+        pointer.x += (pointer.targetX - pointer.x) * 0.04;
+        pointer.y += (pointer.targetY - pointer.y) * 0.04;
+        stars.forEach((star) => {
+          const shimmer = prefersReducedMotion ? 1 : 0.75 + Math.sin(time * 0.0015 + star.tw) * 0.25;
+          const x = star.x + pointer.x * star.z * 18;
+          const y = star.y + pointer.y * star.z * 18;
+          ctx.beginPath();
+          ctx.fillStyle = `rgba(232, 234, 246, ${star.a * shimmer})`;
+          ctx.arc(x, y, star.r * star.z, 0, Math.PI * 2);
+          ctx.fill();
+        });
+        if (!prefersReducedMotion) requestAnimationFrame(drawStars);
+      }
+
+      window.addEventListener("resize", resizeStars);
+      window.addEventListener("pointermove", (event) => {
+        pointer.targetX = (event.clientX / window.innerWidth - 0.5) * 2;
+        pointer.targetY = (event.clientY / window.innerHeight - 0.5) * 2;
+      }, { passive: true });
+      resizeStars();
+      requestAnimationFrame(drawStars);
+
+      /* =========================
+         MISSION CLOCK
+      ========================= */
+      const clock = $("#mission-clock");
+      const launch = Date.UTC(2187, 2, 3, 9, 0, 0);
+      const stationNow = Date.UTC(2187, 8, 18, 16, 42, 12);
+      const baseSeconds = Math.floor((stationNow - launch) / 1000);
+      const localStart = Date.now();
+
+      function renderClock() {
+        const total = baseSeconds + Math.floor((Date.now() - localStart) / 1000);
+        const days = Math.floor(total / 86400);
+        const hours = Math.floor(total % 86400 / 3600);
+        const minutes = Math.floor(total % 3600 / 60);
+        const seconds = total % 60;
+        clock.textContent = `${String(days).padStart(3, "0")}D ${String(hours).padStart(2, "0")}H ${String(minutes).padStart(2, "0")}M ${String(seconds).padStart(2, "0")}S`;
+      }
+      renderClock();
+      setInterval(renderClock, 1000);
+
+      /* =========================
+         ARCHIVE FILTERING
+      ========================= */
+      const filterButtons = $$(".filter-button");
+      const logCards = $$(".log-card");
+      filterButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          const filter = button.dataset.filter;
+          filterButtons.forEach((item) => item.classList.toggle("is-active", item === button));
+          logCards.forEach((card) => {
+            card.classList.toggle("is-filtered", filter !== "ALL" && card.dataset.classification !== filter);
+          });
+        });
+      });
+
+      /* =========================
+         TELEMETRY SIMULATION
+      ========================= */
+      const signalStrength = $("#signal-strength");
+      const signalProgress = $("#signal-progress");
+      const thermalCore = $("#thermal-core");
+      const matterDensity = $("#matter-density");
+      const syncStatus = $("#sync-status");
+      const syncPanel = $("#sync-panel");
+
+      function updateSignal() {
+        const value = Math.round(66 + Math.random() * 31);
+        signalStrength.textContent = value;
+        signalProgress.style.width = `${value}%`;
+      }
+      function updateThermal() {
+        thermalCore.textContent = Math.round(3100 + Math.random() * 100);
+      }
+      function updateDensity() {
+        matterDensity.textContent = (0.032 + Math.random() * 0.105).toFixed(3);
+      }
+      function toggleSync() {
+        const drift = syncStatus.textContent === "NOMINAL";
+        syncStatus.textContent = drift ? "DRIFT DETECTED" : "NOMINAL";
+        syncPanel.classList.toggle("is-drift", drift);
+        syncPanel.classList.toggle("is-nominal", !drift);
+      }
+      updateSignal();
+      updateThermal();
+      updateDensity();
+      setInterval(updateSignal, 1800);
+      setInterval(updateThermal, 2000);
+      setInterval(updateDensity, 3000);
+      setInterval(toggleSync, 5000);
+
+      const terminal = $("#terminal-log");
+      const terminalMessages = [
+        "AO/CORE: alignment packet accepted",
+        "LIDAR: dust profile rewritten at 0.0004 variance",
+        "COMMS: public mirror heartbeat stable",
+        "CRYO: sleeper delta within acceptable range",
+        "OPTICS: coronagraph plate temperature corrected",
+        "ARCHIVE: delayed release queue signed",
+        "GRAVITY: local vector disagreement 0.002%",
+        "THERMAL: radiator petals adjusting",
+        "SIGNAL: heliopause echo sampled",
+        "DRIVE: inertial lock retained",
+        "MED: circadian lamps set to Titan dawn",
+        "SECURITY: corridor seven returned no motion",
+        "RELAY: Neptune occultation in 00:18:22",
+        "BOTANY: basil fluorescence above forecast",
+        "ARRAY: dark-sky calibration continuing",
+        "QUANTUM: sync pair refreshed",
+        "DOCK: exterior clamp frost sublimating",
+        "ARCHIVE: redaction veil committed",
+        "OPTICS: false moon candidate tagged",
+        "AO/CORE: silence interval preserved"
+      ];
+      let terminalIndex = 0;
+      function appendTerminalLine() {
+        const line = document.createElement("div");
+        const timestamp = new Date().toISOString().slice(11, 19);
+        line.textContent = `${timestamp} ${terminalMessages[terminalIndex % terminalMessages.length]}`;
+        terminal.appendChild(line);
+        terminalIndex += 1;
+        while (terminal.children.length > 40) terminal.removeChild(terminal.firstChild);
+        terminal.scrollTop = terminal.scrollHeight;
+      }
+      for (let index = 0; index < 7; index += 1) appendTerminalLine();
+      setInterval(appendTerminalLine, 1500);
+
+      /* =========================
+         CARTOGRAPHY INTERACTION
+      ========================= */
+      const planetInfo = {
+        Mercury: ["57.9 million km", "88 Earth days", "Mercury appears as a silver punctuation mark in Aetherium's forward optical array."],
+        Venus: ["108.2 million km", "225 Earth days", "Cloud reflectivity is used as a reference white for station cinematic calibration."],
+        Earth: ["149.6 million km", "365 Earth days", "Earth transmissions arrive here as a braided archive of weather, grief, and old music."],
+        Mars: ["227.9 million km", "687 Earth days", "The Martian relay still stamps packets with imperial sunset metadata."],
+        Jupiter: ["778.5 million km", "11.86 Earth years", "Jovian storms are monitored as slow instruments, each band a pressure-written score."],
+        Neptune: ["4.50 billion km", "164.8 Earth years", "Neptune is less a planet from here than a blue lock on the door behind us."]
+      };
+      const planetName = $("#planet-name");
+      const planetDistance = $("#planet-distance");
+      const planetPeriod = $("#planet-period");
+      const planetNote = $("#planet-note");
+      $$(".planet").forEach((planet) => {
+        planet.addEventListener("click", () => {
+          const name = planet.dataset.planet;
+          const data = planetInfo[name];
+          planetName.textContent = name;
+          planetDistance.textContent = data[0];
+          planetPeriod.textContent = data[1];
+          planetNote.textContent = data[2];
+        });
+      });
+
+      $("#locate-station").addEventListener("click", () => {
+        const beam = $("#signal-beam");
+        beam.classList.remove("is-active");
+        void beam.getBoundingClientRect();
+        beam.classList.add("is-active");
+      });
+
+      /* =========================
+         TRANSMISSION FORM
+      ========================= */
+      const form = $("#transmission-form");
+      const message = $("#message");
+      const charCount = $("#char-count");
+      const transmitButton = $(".transmit-button", form);
+      const buttonText = $(".button-text", transmitButton);
+
+      message.addEventListener("input", () => {
+        charCount.textContent = message.value.length;
+      });
+
+      form.addEventListener("submit", (event) => {
+        event.preventDefault();
+        if (transmitButton.classList.contains("is-sending")) return;
+        transmitButton.classList.remove("is-success");
+        transmitButton.classList.add("is-sending");
+        buttonText.textContent = "TRANSMITTING...";
+        setTimeout(() => {
+          transmitButton.classList.remove("is-sending");
+          transmitButton.classList.add("is-success");
+          buttonText.textContent = "TRANSMISSION RECEIVED";
+          form.reset();
+          charCount.textContent = "0";
+          setTimeout(() => {
+            transmitButton.classList.remove("is-success");
+            buttonText.textContent = "TRANSMIT MESSAGE";
+          }, 2600);
+        }, 2000);
+      });
+    })();
+  </script>
+</body>
+</html>
