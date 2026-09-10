@@ -12,3 +12,7 @@ An interactive WebGL observatory concept for exploring scientific data as a calm
 ## Run locally
 
 Open `index.html` in a browser or serve the folder with any static web server.
+
+## Project status
+
+Immersive storytelling study focused on cinematic web presentation and observatory-inspired interaction.
